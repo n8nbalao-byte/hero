@@ -1,0 +1,129 @@
+:root {
+    --primary-color: #DC0000;
+    --primary-hover: #b90000;
+    --background-color: #f8f9fa;
+    --text-color: #333;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    --input-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+body {
+    background-color: var(--background-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--primary-color) !important;
+    padding: 15px 20px;
+    color: white;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.navbar a:hover {
+    opacity: 0.8;
+}
+
+/* Hero Section */
+.hero-section {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    margin-bottom: 30px;
+    margin-top: -1px;
+}
+
+/* Search Box */
+.search-container {
+    max-width: 600px;
+    margin: -50px auto 30px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 10;
+}
+
+.search-input {
+    width: 100%;
+    padding: 18px 25px;
+    border-radius: 15px;
+    border: none;
+    box-shadow: var(--input-shadow);
+    font-size: 16px;
+    outline: none;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+.category-item {
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #555;
+    transition: 0.2s;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.category-item:hover, .category-item.active {
+    background-color: #FEF2F2;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Product Card */
+.product-card {
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 12px;
+    background-color: white;
+    transition: 0.2s;
+    box-shadow: var(--card-shadow);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.badge-count {
+    background-color: white;
+    color: var(--primary-color);
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 5px;
+}

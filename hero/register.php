@@ -2,36 +2,37 @@
 session_start();
 require_once 'config.php';
 
-$erro = '';
-$sucesso = '';
+$msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome = filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_STRING);
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $senha = $_POST['senha'];
-    $tipo = 'client'; // Padrão
+    $nome = $_POST['nome'];
+    $email = $_POST['email'];
+    $senha = password_hash($_POST['senha'], PASSWORD_DEFAULT);
+    $tipo = $_POST['tipo']; // client, store, courier
+    $telefone = $_POST['telefone'];
 
-    if ($nome && $email && $senha) {
-        try {
-            // Verifica se email já existe
-            $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
-            $stmt->execute([$email]);
-            if ($stmt->fetch()) {
-                $erro = 'E-mail já cadastrado.';
-            } else {
-                $hash = password_hash($senha, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)");
-                if ($stmt->execute([$nome, $email, $hash, $tipo])) {
-                    $sucesso = 'Cadastro realizado com sucesso! <a href="login.php" class="underline">Faça login</a>.';
-                } else {
-                    $erro = 'Erro ao cadastrar.';
-                }
-            }
-        } catch (PDOException $e) {
-            $erro = 'Erro no banco de dados: ' . $e->getMessage();
+    // Campos extras
+    $veiculo_tipo = $_POST['veiculo_tipo'] ?? null;
+    $veiculo_placa = $_POST['veiculo_placa'] ?? null;
+    $nome_loja = $_POST['nome_loja'] ?? null;
+
+    try {
+        // Verifica email duplicado
+        $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            $msg = "Este email já está cadastrado.";
+        } else {
+            $sql = "INSERT INTO usuarios (nome, email, senha, tipo, telefone, veiculo_tipo, veiculo_placa, nome_loja) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$nome, $email, $senha, $tipo, $telefone, $veiculo_tipo, $veiculo_placa, $nome_loja]);
+
+            $msg = "Cadastro realizado com sucesso! Faça login.";
+            // Opcional: Redirecionar direto para login
+             header("refresh:2;url=login.php");
         }
-    } else {
-        $erro = 'Preencha todos os campos.';
+    } catch (PDOException $e) {
+        $msg = "Erro ao cadastrar: " . $e->getMessage();
     }
 }
 ?>
@@ -42,44 +43,165 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro - Hero Delivery</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Criar Conta</h2>
-        
-        <?php if ($erro): ?>
-            <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-                <?php echo $erro; ?>
-            </div>
-        <?php endif; ?>
-        <?php if ($sucesso): ?>
-            <div class="bg-green-100 text-green-700 p-3 rounded mb-4 text-sm">
-                <?php echo $sucesso; ?>
-            </div>
-        <?php endif; ?>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .register-card {
+            max-width: 500px;
+            width: 100%;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .role-box {
+            padding: 15px 10px;
+            border-radius: 16px;
+            border: 2px solid #f0f0f0;
+            background-color: #fff;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .role-box.selected {
+            border-color: #DC0000;
+            background-color: #fff4f4;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus {
+            border-color: #DC0000;
+        }
+        .btn-register {
+            width: 100%;
+            padding: 16px;
+            background-color: #DC0000;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(220, 0, 0, 0.2);
+            transition: 0.3s;
+        }
+        .btn-register:hover {
+            background-color: #b90000;
+        }
+    </style>
+    <script>
+        function selectRole(role) {
+            document.querySelectorAll('.role-box').forEach(el => el.classList.remove('selected'));
+            document.getElementById('role-' + role).classList.add('selected');
+            document.getElementById('input-tipo').value = role;
 
-        <form method="POST" action="">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="nome">Nome Completo</label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="nome" name="nome" type="text" placeholder="Seu Nome" required>
-            </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="email">E-mail</label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" name="email" type="email" placeholder="seu@email.com" required>
-            </div>
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="senha">Senha</label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="senha" name="senha" type="password" placeholder="********" required>
-            </div>
-            <div class="flex items-center justify-between">
-                <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full" type="submit">
-                    Cadastrar
-                </button>
-            </div>
-            <div class="mt-4 text-center">
-                <a href="login.php" class="text-sm text-blue-600 hover:text-blue-800">Já tem conta? Faça login</a>
-            </div>
-        </form>
+            document.getElementById('extra-courier').style.display = role === 'courier' ? 'block' : 'none';
+            document.getElementById('extra-store').style.display = role === 'store' ? 'block' : 'none';
+        }
+    </script>
+</head>
+<body>
+
+<div class="register-card">
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Crie sua Conta</h2>
+        <p class="text-gray-500">Comece a usar o Hero Delivery hoje mesmo</p>
     </div>
+
+    <?php if ($msg): ?>
+        <div class="<?php echo strpos($msg, 'sucesso') !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'; ?> p-3 rounded mb-6 text-sm text-center">
+            <?php echo $msg; ?>
+        </div>
+    <?php endif; ?>
+
+    <form method="POST">
+        <input type="hidden" name="tipo" id="input-tipo" value="client">
+
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <div id="role-client" class="role-box selected" onclick="selectRole('client')">
+                <i class="fas fa-user text-xl text-gray-600"></i>
+                <span class="text-sm font-semibold">Cliente</span>
+            </div>
+            <div id="role-store" class="role-box" onclick="selectRole('store')">
+                <i class="fas fa-store text-xl text-gray-600"></i>
+                <span class="text-sm font-semibold">Loja</span>
+            </div>
+            <div id="role-courier" class="role-box" onclick="selectRole('courier')">
+                <i class="fas fa-motorcycle text-xl text-gray-600"></i>
+                <span class="text-sm font-semibold">Entregador</span>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Nome Completo</label>
+                <input type="text" name="nome" class="form-input" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <input type="email" name="email" class="form-input" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+                    <input type="password" name="senha" class="form-input" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
+                    <input type="text" name="telefone" class="form-input" required>
+                </div>
+            </div>
+
+            <!-- Campos Extras Courier -->
+            <div id="extra-courier" style="display: none;" class="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300">
+                <h4 class="font-bold text-gray-700 mb-3 text-sm">Dados do Veículo</h4>
+                <div class="space-y-3">
+                    <select name="veiculo_tipo" class="form-input">
+                        <option value="moto">Moto</option>
+                        <option value="carro">Carro</option>
+                        <option value="bicicleta">Bicicleta</option>
+                    </select>
+                    <input type="text" name="veiculo_placa" class="form-input" placeholder="Placa do Veículo">
+                </div>
+            </div>
+
+            <!-- Campos Extras Loja -->
+            <div id="extra-store" style="display: none;" class="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300">
+                <h4 class="font-bold text-gray-700 mb-3 text-sm">Dados da Loja</h4>
+                <div class="space-y-3">
+                    <input type="text" name="nome_loja" class="form-input" placeholder="Nome Fantasia da Loja">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-register mt-4">Criar Conta</button>
+        </div>
+    </form>
+
+    <div class="mt-6 text-center text-sm text-gray-600">
+        Já tem uma conta? <a href="login.php" class="text-red-600 font-bold hover:underline">Fazer Login</a>
+    </div>
+</div>
+
 </body>
 </html>

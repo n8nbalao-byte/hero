@@ -2,42 +2,33 @@
 session_start();
 require_once 'config.php';
 
-$erro = '';
+$msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $email = $_POST['email'];
     $senha = $_POST['senha'];
 
-    if ($email && $senha) {
-        try {
-            $stmt = $pdo->prepare("SELECT id, nome, senha, tipo FROM usuarios WHERE email = ?");
-            $stmt->execute([$email]);
-            $usuario = $stmt->fetch();
+    $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
 
-            if ($usuario && password_verify($senha, $usuario['senha'])) {
-                // Login sucesso
-                $_SESSION['user_id'] = $usuario['id'];
-                $_SESSION['user_nome'] = $usuario['nome'];
-                $_SESSION['user_tipo'] = $usuario['tipo'];
-                header('Location: index.php');
-                exit;
-            } else {
-                // Tentar verificar sem hash (para migração/teste se senhas estiverem em texto plano, embora inseguro)
-                // Remover este bloco em produção se todas senhas estiverem hash
-                if ($usuario && $senha === $usuario['senha']) {
-                     $_SESSION['user_id'] = $usuario['id'];
-                     $_SESSION['user_nome'] = $usuario['nome'];
-                     $_SESSION['user_tipo'] = $usuario['tipo'];
-                     header('Location: index.php');
-                     exit;
-                }
-                $erro = 'E-mail ou senha inválidos.';
-            }
-        } catch (PDOException $e) {
-            $erro = 'Erro ao processar login.';
+    if ($user && password_verify($senha, $user['senha'])) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_nome'] = $user['nome'];
+        $_SESSION['user_tipo'] = $user['tipo'];
+
+        if ($user['tipo'] === 'store') {
+            header("Location: shop.php");
+        } elseif ($user['tipo'] === 'courier') {
+            header("Location: courier.php");
+        } elseif ($user['tipo'] === 'admin') {
+            header("Location: admin.php");
+        } else {
+            header("Location: index.php");
         }
+        exit;
     } else {
-        $erro = 'Preencha todos os campos.';
+        $msg = "Email ou senha inválidos.";
     }
 }
 ?>
@@ -48,38 +39,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Hero Delivery</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background-color: #DC0000;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-login:hover {
+            background-color: #b90000;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
-        
-        <?php if ($erro): ?>
-            <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-                <?php echo $erro; ?>
-            </div>
-        <?php endif; ?>
+<body>
 
-        <form method="POST" action="">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="email">E-mail</label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" name="email" type="email" placeholder="seu@email.com" required>
-            </div>
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="senha">Senha</label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="senha" name="senha" type="password" placeholder="********" required>
-            </div>
-            <div class="flex items-center justify-between">
-                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full" type="submit">
-                    Entrar
-                </button>
-            </div>
-            <div class="mt-4 text-center">
-                <a href="register.php" class="text-sm text-blue-600 hover:text-blue-800">Não tem conta? Cadastre-se</a>
-            </div>
-            <div class="mt-2 text-center">
-                <a href="index.php" class="text-sm text-gray-600 hover:text-gray-800">Voltar para Home</a>
-            </div>
-        </form>
+<div class="login-card">
+    <div class="mb-6 flex justify-center">
+        <!-- Logo -->
+        <a href="index.php" class="flex items-center gap-2 text-red-600">
+            <i class="fas fa-motorcycle text-3xl"></i>
+            <span class="text-2xl font-bold">Hero Delivery</span>
+        </a>
     </div>
+
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">Bem-vindo de volta!</h2>
+
+    <?php if ($msg): ?>
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
+            <?php echo $msg; ?>
+        </div>
+    <?php endif; ?>
+
+    <form method="POST">
+        <input type="email" name="email" class="form-input" placeholder="Seu Email" required>
+        <input type="password" name="senha" class="form-input" placeholder="Sua Senha" required>
+        
+        <button type="submit" class="btn-login">Entrar</button>
+    </form>
+
+    <div class="mt-6 text-sm text-gray-600">
+        Não tem uma conta? <a href="register.php" class="text-red-600 font-bold hover:underline">Cadastre-se</a>
+    </div>
+    
+    <div class="mt-4">
+        <a href="index.php" class="text-gray-400 hover:text-gray-600 text-sm">Voltar para Home</a>
+    </div>
+</div>
+
+<!-- FontAwesome for Icon -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
 </body>
 </html>
