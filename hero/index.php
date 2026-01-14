@@ -113,9 +113,14 @@ $categorias = [
                                     <span class="text-2xl font-bold text-gray-900">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></span>
                                     <span class="text-xs text-gray-500">à vista</span>
                                 </div>
-                                <button class="btn-primary w-full flex justify-center items-center gap-2">
-                                    <i class="fas fa-cart-plus"></i> Adicionar
-                                </button>
+                                <form action="cart.php" method="POST">
+                                    <input type="hidden" name="action" value="add">
+                                    <input type="hidden" name="product_id" value="<?php echo $produto['id']; ?>">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn-primary w-full flex justify-center items-center gap-2">
+                                        <i class="fas fa-cart-plus"></i> Adicionar
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
